@@ -1,0 +1,62 @@
+Selector、Channel、Buffer关系
+1.每个Channel都会对应一个Buffer
+2.Selector对应一个线程，一个线程对应多个channel(连接)
+3.channel是注册到selector程序中的
+4.程序切换到哪个channel是有事件决定的，Event就是一个重要概念
+5.Selector会根据不同的事件，在各个通道上切换
+6.Buffer就是一个内存块，底层是有一个数组
+7.数据的读取写入都是通过Buffer.可读可写
+8.channel是双向的，可以反应底层操作系统的情况,比如Linux底层的操作系统通道就是双向的
+
+java.nio类
+
+Buffer类介绍
+   mark   标记
+   position 下一个要被读或写的元素索引，每次读写缓冲区数据时都会改变值为写词读写作准备
+   limit 表示缓冲区的当前终点，不能对缓冲区超过极限的位置进行读写操作。且极限是可以修改的
+   capacity 即可容纳的最大数据量，在缓冲区创建时被设定并且不能改变
+   
+Channel 
+    NIO的通道类似于流，但有区别
+    通道可以同时进行读写，而流只能读或者只能写
+    通道可以实现异步读写数据
+    通道可以从缓冲区读数据，也可以写道数据缓冲区
+	
+FileChannel
+    FileChannel主要用来兑本地文件进行IO操作，常见的方法
+	public int read(ByteBuffer dst) 从通道读取数据并放到缓冲区
+	public int write(ByteBuffer src) 从缓冲区的数据写到通道中
+	public long transferFrom(ReadableByteChannel src,long position,long count) 从目标通道中复制数据到当前通道
+	public long transferTo(long position,long count,WriteableByteChannel target),把数据从当前通道复制给目标通道
+	
+FileChannel的demo代码
+	 FileOutputStream fos = new FileOutputStream("a.txt");
+     FileChannel fileChannel = fos.getChannel();
+
+      ByteBuffer buffer = ByteBuffer.allocate(1024);
+      buffer.put("你好呀".getBytes());
+      buffer.flip();
+      fileChannel.write(buffer);
+      fos.close();
+	  
+	  
+	    RandomAccessFile randomAccessFile = new RandomAccessFile("a.txt","rw");
+        //获取对应的通道
+        FileChannel channel = randomAccessFile.getChannel();
+        /**
+         * 参数1: FileChannel.MapMode.READ_WRITE 使用读写模式
+         * 参数2： 可以直接修改的起始位置
+         * 参数3: 映射到内存大小，即将a.txt的多个字节映射到内存
+         * 可以直接修改的范围是0-5
+         * MappedByteBuffer实际类型是DirectByteBuffer
+         */
+        MappedByteBuffer mappedByteBuffer =  channel.map(FileChannel.MapMode.READ_WRITE,0,5);
+        mappedByteBuffer.put(0,(byte)'H');
+        mappedByteBuffer.put(3,(byte)'9');
+        randomAccessFile.close();
+Selector选择器		
+  1、Selector能够检测到多个注册的通道上是否有事件发生（注意：多个channel以事件的方式可以注册到同一个Selector）,如果有事件发生，便获取事件然后针对
+  每个事件进行相应处理，这样就可以只用一个单线程去管理多个通道，也就是管理多个连接和请求
+  2、只有在连接/通道 真正有读写事件发生时，才会进行读写，就大大减少了系统开销，并且不必为每个连接都创建一个线程，不用去维护多个线程
+  3、避免了多线程之间的上下文切换导致的开销
+
