@@ -1,0 +1,46 @@
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        Selector selector = Selector.open();
+        serverSocketChannel.socket().bind(new InetSocketAddress(666));
+        //设置非阻塞
+        serverSocketChannel.configureBlocking(false);
+        //把serverSocketChannel注册到selector
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+        while(true){
+            //等待1秒钟，如果没有事件发生，返回
+            if(selector.select(3000) == 0){  //如果没有事件发生
+                System.out.println("服务器等了3S，无连接");
+                continue;
+            }
+            /**
+             * 如果返回的>0就获取相关的selectionKey集合
+             *  1.如果返回>0标记已经获取关注的事件
+             *  2.selector.selectedKeys()返回关注事件的集合
+             *  通过selectionKeys返回获取通道
+             */
+            Set<SelectionKey> selectionKeys = selector.selectedKeys();
+            //便利Set<SelectionKey>，使用迭代器遍历
+            Iterator<SelectionKey> keyIterator = selectionKeys.iterator();
+            while(keyIterator.hasNext()){
+                //获取selectionKey
+                SelectionKey key = keyIterator.next();
+                //根据key 对应通道发生的事件做相应处理
+                if(key.isAcceptable()){   //如果是OP_ACCEPT 有新的客户端连接
+                    SocketChannel socketChannel = serverSocketChannel.accept();
+                    System.out.println("客户端连接成功 生成一个socketChannel "+socketChannel.hashCode());
+                    //将SocketChannel 设置为非阻塞
+                    socketChannel.configureBlocking(false);
+                    //将socketChannel注册到selector,关注事件为OP_READ,同时给socketChannel关联一个buffer
+                    socketChannel.register(selector,SelectionKey.OP_READ, ByteBuffer.allocate(1024));
+
+                }
+                if(key.isReadable()){
+                    //通过key 反向获取到channel
+                    SocketChannel channel = (SocketChannel) key.channel();
+                    ByteBuffer buffer = (ByteBuffer) key.attachment();
+                    int read = channel.read(buffer);
+                    System.out.println(new String(buffer.array(),0,read));
+                }
+                keyIterator.remove();
+            }
+        }
