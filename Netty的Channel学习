@@ -1,0 +1,8 @@
+Channel的主要作用
+ 1. close()主要用来关闭channel
+ 2. closeFuture()用来处理channel的关闭
+    sync方法作用是同步等待channel关闭
+    而addListener方法是异步等待channel关闭
+pipeline()方法添加处理器
+write()方法将数据写入
+writeAndFlush方法将数据写入并且刷出
