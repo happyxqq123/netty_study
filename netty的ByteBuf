@@ -1,0 +1,13 @@
+  ByteBufAllocator.DEFAULT.directBuffer(10);
+  直接内存创建和销毁代价昂贵，但读写性能高（少一次内存复制），适合配合池化功能一起使用
+  直接内存堆GC压力小，因为这部分内存不受JVM垃圾回收器管理，但也要主要主动释放
+池化VS非池化
+   池化的意义在于可以重用ByteBuf，优点有
+   没有池化，则每次都得创建新的ByteBuf实例，这个操作对直接内存代价昂贵，就算是堆内存，也会增加GC压力
+   有了池化，则可以重用池中ByteBuf实列，并且采用了与jemalloc类似的内存分配算法提升分配效率
+   高并发时，池化功能更节约内存，减少内存溢出
+   -Dio.netty.allocator.type={unpooled|pooled}
+    4.1以后，非Android平台默认启用了池化实现，Android平台启用非池化实现
+    4.1之前，池化功能还不成熟，默认是非池化实现
+ ByteBuf组成
+    
